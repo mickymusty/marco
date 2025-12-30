@@ -1,195 +1,108 @@
-/**
- * Marco Polo - Main App Component
- *
- * A web-based Marco Polo game where you play as a blindfolded seeker
- * trying to catch fish by listening for their "Polo!" responses.
- *
- * Controls:
- * - WASD / Arrow Keys: Move
- * - Space: Call "Marco!" (reveals nearby fish briefly)
- * - Escape / P: Pause
- */
+import { useState } from 'react';
+import type { CSSProperties } from 'react';
+import { Game3D } from './components/Three/Game3D.tsx';
+import type { Difficulty } from './types/threeGame.ts';
 
-import { useEffect } from 'react';
-import { MainMenu } from './components/Menu/MainMenu.tsx';
-import { GameOver } from './components/Menu/GameOver.tsx';
-import { GameCanvas } from './components/Game/GameCanvas.tsx';
-import { GameHUD, GameHUDBottom } from './components/Game/GameHUD.tsx';
-import { PauseOverlay } from './components/Game/PauseOverlay.tsx';
-import { useGameState } from './hooks/useGameState.ts';
-import { useKeyPress } from './hooks/useKeyboard.ts';
-import { resumeAudio } from './utils/helpers.ts';
-
-/**
- * Main App Component
- */
 function App() {
-  const {
-    screen,
-    gameStats,
-    startGame,
-    restartGame,
-    pauseGame,
-    resumeGame,
-    returnToMenu,
-    updateGame,
-    renderGame,
-    highScore,
-    engineState,
-  } = useGameState();
+  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const [gameKey, setGameKey] = useState(0);
 
-  // Handle keyboard shortcuts for pause/resume
-  useKeyPress('Escape', () => {
-    if (screen === 'paused') {
-      resumeGame();
-    }
-  }, screen === 'paused');
+  const handleDifficultyChange = (newDifficulty: Difficulty) => {
+    setDifficulty(newDifficulty);
+    setGameKey((prev) => prev + 1);
+  };
 
-  useKeyPress('KeyP', () => {
-    if (screen === 'paused') {
-      resumeGame();
-    }
-  }, screen === 'paused');
-
-  // Handle Enter/Space to restart from game over
-  useKeyPress('Enter', () => {
-    if (screen === 'gameOver') {
-      restartGame();
-    }
-  }, screen === 'gameOver');
-
-  useKeyPress('Space', () => {
-    if (screen === 'gameOver') {
-      restartGame();
-    }
-  }, screen === 'gameOver');
-
-  // Resume audio on any user interaction
-  useEffect(() => {
-    const handleInteraction = () => {
-      resumeAudio();
-    };
-
-    window.addEventListener('click', handleInteraction, { once: true });
-    window.addEventListener('keydown', handleInteraction, { once: true });
-
-    return () => {
-      window.removeEventListener('click', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
-    };
-  }, []);
-
-  // Container styles
-  const containerStyle: React.CSSProperties = {
+  const pageStyle: CSSProperties = {
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'linear-gradient(180deg, #0a1628 0%, #1a3a5c 50%, #0a1628 100%)',
-    overflow: 'hidden',
+    padding: '24px',
+    gap: '20px',
+    background: 'radial-gradient(circle at 50% 30%, #0a0a25, #000010)',
   };
 
-  const gameContainerStyle: React.CSSProperties = {
+  const headerStyle: CSSProperties = {
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
-    gap: '10px',
+    gap: '24px',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   };
 
-  // Render based on current screen
-  switch (screen) {
-    case 'menu':
-      return <MainMenu onStartGame={startGame} highScore={highScore} />;
+  const titleStyle: CSSProperties = {
+    fontSize: '28px',
+    fontWeight: 700,
+    color: '#ffff00',
+    textShadow: '0 0 20px rgba(255, 255, 0, 0.5)',
+    letterSpacing: '0.05em',
+  };
 
-    case 'playing':
-    case 'paused':
-      return (
-        <div style={containerStyle}>
-          <div style={gameContainerStyle}>
-            {/* HUD - Top */}
-            {gameStats && (
-              <GameHUD
-                score={gameStats.score}
-                timeRemaining={gameStats.timeRemaining}
-                fishCaught={gameStats.fishCaught}
-                totalFish={gameStats.totalFish}
-                marcoCallsRemaining={gameStats.marcoCallsRemaining}
-                maxMarcoCalls={gameStats.maxMarcoCalls}
-                canCallMarco={gameStats.canCallMarco}
-                cooldownProgress={gameStats.cooldownProgress}
-                comboCount={gameStats.comboCount}
-              />
-            )}
+  const difficultyContainerStyle: CSSProperties = {
+    display: 'flex',
+    gap: '8px',
+  };
 
-            {/* Game Canvas */}
-            <GameCanvas
-              isPlaying={screen === 'playing'}
-              onUpdate={updateGame}
-              onRender={renderGame}
-              onPause={pauseGame}
-            />
+  const buttonBase: CSSProperties = {
+    padding: '10px 20px',
+    borderRadius: '8px',
+    border: '2px solid',
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontSize: '14px',
+    transition: 'all 0.2s ease',
+  };
 
-            {/* HUD - Bottom */}
-            <GameHUDBottom />
-          </div>
+  const getButtonStyle = (level: Difficulty): CSSProperties => {
+    const isActive = difficulty === level;
+    const colors = {
+      easy: { bg: '#22cc66', border: '#22cc66', text: '#000' },
+      medium: { bg: '#ffaa00', border: '#ffaa00', text: '#000' },
+      hard: { bg: '#ff4444', border: '#ff4444', text: '#fff' },
+    };
+    const c = colors[level];
 
-          {/* Pause Overlay */}
-          {screen === 'paused' && (
-            <PauseOverlay
-              onResume={resumeGame}
-              onRestart={restartGame}
-              onMainMenu={returnToMenu}
-            />
-          )}
+    return {
+      ...buttonBase,
+      background: isActive ? c.bg : 'transparent',
+      borderColor: c.border,
+      color: isActive ? c.text : c.border,
+      boxShadow: isActive ? `0 0 20px ${c.bg}66` : 'none',
+    };
+  };
+
+  return (
+    <div style={pageStyle}>
+      <div style={headerStyle}>
+        <div style={titleStyle}>PAC-MAN 3D</div>
+        <div style={difficultyContainerStyle}>
+          <button
+            type="button"
+            style={getButtonStyle('easy')}
+            onClick={() => handleDifficultyChange('easy')}
+          >
+            EASY
+          </button>
+          <button
+            type="button"
+            style={getButtonStyle('medium')}
+            onClick={() => handleDifficultyChange('medium')}
+          >
+            MEDIUM
+          </button>
+          <button
+            type="button"
+            style={getButtonStyle('hard')}
+            onClick={() => handleDifficultyChange('hard')}
+          >
+            HARD
+          </button>
         </div>
-      );
-
-    case 'gameOver':
-      return (
-        <div style={containerStyle}>
-          <div style={gameContainerStyle}>
-            {/* Keep canvas visible in background */}
-            {gameStats && (
-              <GameHUD
-                score={gameStats.score}
-                timeRemaining={gameStats.timeRemaining}
-                fishCaught={gameStats.fishCaught}
-                totalFish={gameStats.totalFish}
-                marcoCallsRemaining={gameStats.marcoCallsRemaining}
-                maxMarcoCalls={gameStats.maxMarcoCalls}
-                canCallMarco={false}
-                cooldownProgress={0}
-                comboCount={0}
-              />
-            )}
-
-            <GameCanvas
-              isPlaying={false}
-              onUpdate={updateGame}
-              onRender={renderGame}
-            />
-          </div>
-
-          {/* Game Over Screen */}
-          {gameStats && engineState && (
-            <GameOver
-              score={gameStats.score}
-              highScore={highScore}
-              fishCaught={gameStats.fishCaught}
-              totalFish={gameStats.totalFish}
-              timeRemaining={gameStats.timeRemaining}
-              difficulty={gameStats.difficulty}
-              onRestart={restartGame}
-              onMainMenu={returnToMenu}
-            />
-          )}
-        </div>
-      );
-
-    default:
-      return <MainMenu onStartGame={startGame} highScore={highScore} />;
-  }
+      </div>
+      <Game3D key={gameKey} difficulty={difficulty} />
+    </div>
+  );
 }
 
 export default App;
