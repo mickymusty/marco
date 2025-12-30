@@ -68,19 +68,27 @@ export function GameHUD({
   return (
     <div style={hudStyle}>
       {/* Left Panel - Score */}
-      <div style={panelStyle}>
+      <div style={{
+        ...panelStyle,
+        border: comboCount > 1 ? '2px solid #ff6b6b' : '2px solid transparent',
+        boxShadow: comboCount > 1 ? '0 0 15px rgba(255, 107, 107, 0.5)' : 'none',
+        transition: 'all 0.2s ease',
+      }}>
         <div style={labelStyle}>Score</div>
         <div style={{
           ...valueStyle,
           color: '#ffd700',
+          textShadow: comboCount > 1 ? '0 0 10px #ffd700' : 'none',
         }}>
           {score.toLocaleString()}
         </div>
         {comboCount > 1 && (
           <div style={{
-            fontSize: '14px',
-            color: '#ff6b6b',
-            animation: 'pulse 0.5s ease infinite',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: comboCount >= 5 ? '#ff3333' : comboCount >= 3 ? '#ff6b6b' : '#ffaa00',
+            animation: 'comboPulse 0.3s ease infinite',
+            textShadow: '0 0 8px currentColor',
           }}>
             {comboCount}x COMBO!
           </div>
@@ -115,13 +123,20 @@ export function GameHUD({
       </div>
 
       {/* Right Panel - Timer & Marco */}
-      <div style={{ ...panelStyle, textAlign: 'right' }}>
+      <div style={{
+        ...panelStyle,
+        textAlign: 'right',
+        border: isVeryLowTime ? '2px solid #ff4444' : '2px solid transparent',
+        boxShadow: isVeryLowTime ? '0 0 20px rgba(255, 68, 68, 0.6)' : 'none',
+        animation: isVeryLowTime ? 'shake 0.1s ease infinite' : 'none',
+      }}>
         {/* Timer */}
         <div style={labelStyle}>Time</div>
         <div style={{
           ...valueStyle,
           color: isVeryLowTime ? '#ff4444' : isLowTime ? '#ffaa00' : '#ffffff',
-          animation: isVeryLowTime ? 'pulse 0.5s ease infinite' : 'none',
+          animation: isVeryLowTime ? 'pulse 0.3s ease infinite' : isLowTime ? 'pulse 0.8s ease infinite' : 'none',
+          textShadow: isVeryLowTime ? '0 0 15px #ff4444' : isLowTime ? '0 0 10px #ffaa00' : 'none',
         }}>
           {formatTime(timeRemaining)}
         </div>
@@ -173,6 +188,15 @@ export function GameHUD({
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
+        }
+        @keyframes comboPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-2px); }
+          75% { transform: translateX(2px); }
         }
       `}</style>
     </div>

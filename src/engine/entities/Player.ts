@@ -3,8 +3,8 @@
  * Represents the "Marco" seeker in the game
  */
 
-import type { PlayerState, Vector2D, KeyboardState, GameConfig } from '../../types/index.ts';
-import { PLAYER, GAME_BOUNDS, CANVAS_WIDTH, CANVAS_HEIGHT } from '../../constants/index.ts';
+import type { PlayerState, KeyboardState, GameConfig } from '../../types/index.ts';
+import { PLAYER, GAME_BOUNDS } from '../../constants/index.ts';
 import {
   vec,
   vecAdd,
@@ -25,21 +25,6 @@ export function createPlayer(): PlayerState {
     velocity: vec(0, 0),
     radius: PLAYER.radius,
     isActive: true,
-    isCalling: false,
-    callCooldownRemaining: 0,
-    lastCallTime: 0,
-    facingAngle: 0,
-  };
-}
-
-/**
- * Reset player to initial state
- */
-export function resetPlayer(player: PlayerState): PlayerState {
-  return {
-    ...player,
-    position: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 },
-    velocity: vec(0, 0),
     isCalling: false,
     callCooldownRemaining: 0,
     lastCallTime: 0,
@@ -164,46 +149,3 @@ export function triggerMarcoCall(
   };
 }
 
-/**
- * Get player circle for collision detection
- */
-export function getPlayerCircle(player: PlayerState): {
-  x: number;
-  y: number;
-  radius: number;
-} {
-  return {
-    x: player.position.x,
-    y: player.position.y,
-    radius: player.radius,
-  };
-}
-
-/**
- * Check if player hit a wall this frame
- */
-export function checkWallCollision(
-  position: Vector2D,
-  radius: number
-): { hit: boolean; normal: Vector2D } {
-  let hit = false;
-  const normal = vec(0, 0);
-
-  if (position.x - radius < GAME_BOUNDS.minX) {
-    hit = true;
-    normal.x = 1;
-  } else if (position.x + radius > GAME_BOUNDS.maxX) {
-    hit = true;
-    normal.x = -1;
-  }
-
-  if (position.y - radius < GAME_BOUNDS.minY) {
-    hit = true;
-    normal.y = 1;
-  } else if (position.y + radius > GAME_BOUNDS.maxY) {
-    hit = true;
-    normal.y = -1;
-  }
-
-  return { hit, normal };
-}

@@ -38,6 +38,7 @@ import {
   addPoloBubble,
   addCatchParticles,
   addRipple,
+  addScorePopup,
 } from './systems/effects.ts';
 
 import { checkPlayerFishCollision, getFishInRadius } from './systems/collision.ts';
@@ -106,13 +107,6 @@ export function createEngineState(difficulty: Difficulty): EngineState {
     lastCatchTime: 0,
     previousPlayerPosition: { ...player.position },
   };
-}
-
-/**
- * Reset engine state for new game
- */
-export function resetEngineState(_state: EngineState, difficulty: Difficulty): EngineState {
-  return createEngineState(difficulty);
 }
 
 /**
@@ -345,6 +339,7 @@ function checkFishCatches(
       // Add catch effects
       newState.effects = addCatchParticles(newState.effects, fish.position);
       newState.effects = addRipple(newState.effects, fish.position, timestamp);
+      newState.effects = addScorePopup(newState.effects, fish.position, points, timestamp);
 
       onEvent?.({ type: 'FISH_CAUGHT', fishId: fish.id, points });
       onEvent?.({ type: 'SCORE_UPDATED', newScore: newState.gameState.score });
@@ -356,19 +351,6 @@ function checkFishCatches(
   });
 
   return newState;
-}
-
-/**
- * Toggle pause state
- */
-export function togglePause(state: EngineState): EngineState {
-  return {
-    ...state,
-    gameState: {
-      ...state.gameState,
-      isPaused: !state.gameState.isPaused,
-    },
-  };
 }
 
 /**

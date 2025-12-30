@@ -319,19 +319,6 @@ export function triggerPoloResponse(
 }
 
 /**
- * Start fleeing after polo response
- */
-export function startFleeing(
-  fish: FishState,
-  _playerPosition: Vector2D
-): FishState {
-  return {
-    ...fish,
-    currentBehavior: 'fleeing',
-  };
-}
-
-/**
  * Mark fish as caught
  */
 export function catchFish(fish: FishState): FishState {
@@ -350,28 +337,3 @@ export function getFishPoints(fish: FishState): number {
   return FISH.sizes[fish.size].points;
 }
 
-/**
- * Get fish circle for collision detection
- */
-export function getFishCircle(fish: FishState): {
-  x: number;
-  y: number;
-  radius: number;
-} {
-  return {
-    x: fish.position.x,
-    y: fish.position.y,
-    radius: fish.radius,
-  };
-}
-
-/**
- * Check if fish is within Marco wave radius
- */
-export function isInMarcoRange(
-  fish: FishState,
-  playerPosition: Vector2D,
-  waveRadius: number
-): boolean {
-  return vecDistance(fish.position, playerPosition) <= waveRadius;
-}

@@ -16,11 +16,6 @@ export function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-/** Format milliseconds to seconds with decimal */
-export function formatMs(ms: number): string {
-  return (ms / 1000).toFixed(1);
-}
-
 // ============================================================================
 // Local Storage
 // ============================================================================
@@ -47,8 +42,8 @@ export function saveHighScore(score: number): void {
   }
 }
 
-/** Get high scores list from local storage */
-export function getHighScores(): HighScoreEntry[] {
+/** Get high scores list from local storage (internal use) */
+function getHighScores(): HighScoreEntry[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.highScores);
     return stored ? JSON.parse(stored) : [];
@@ -223,33 +218,3 @@ export function getDifficultyColor(difficulty: Difficulty): string {
   return colors[difficulty];
 }
 
-// ============================================================================
-// Performance Utilities
-// ============================================================================
-
-/** Throttle function calls */
-export function throttle<T extends (...args: unknown[]) => void>(
-  func: T,
-  limit: number
-): T {
-  let inThrottle = false;
-  return function (this: unknown, ...args: Parameters<T>) {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
-    }
-  } as T;
-}
-
-/** Debounce function calls */
-export function debounce<T extends (...args: unknown[]) => void>(
-  func: T,
-  wait: number
-): T {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  return function (this: unknown, ...args: Parameters<T>) {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  } as T;
-}

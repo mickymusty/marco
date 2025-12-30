@@ -157,40 +157,4 @@ export function useKeyPress(targetKey: string, callback: () => void, enabled: bo
   }, [targetKey, callback, enabled]);
 }
 
-/**
- * Hook for detecting any key press (for "press any key" screens)
- */
-export function useAnyKeyPress(callback: () => void, enabled: boolean = true) {
-  const hasPressed = useRef(false);
-
-  useEffect(() => {
-    if (!enabled) {
-      hasPressed.current = false;
-      return;
-    }
-
-    const handleKeyDown = () => {
-      if (!hasPressed.current) {
-        hasPressed.current = true;
-        callback();
-      }
-    };
-
-    const handleClick = () => {
-      if (!hasPressed.current) {
-        hasPressed.current = true;
-        callback();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('click', handleClick);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('click', handleClick);
-    };
-  }, [callback, enabled]);
-}
-
 export default useKeyboard;

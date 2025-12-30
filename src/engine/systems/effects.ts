@@ -9,6 +9,7 @@ import type {
   PoloBubble,
   Particle,
   Ripple,
+  ScorePopup,
   Vector2D,
 } from '../../types/index.ts';
 import { EFFECTS, COLORS } from '../../constants/index.ts';
@@ -29,6 +30,7 @@ export function createEffects(): Effects {
     poloBubbles: [],
     particles: [],
     ripples: [],
+    scorePopups: [],
   };
 }
 
@@ -97,32 +99,6 @@ export function createCatchParticles(position: Vector2D): Particle[] {
 }
 
 /**
- * Create splash particles
- */
-export function createSplashParticles(position: Vector2D, color: string): Particle[] {
-  const particles: Particle[] = [];
-  const count = Math.floor(randomRange(3, 6));
-
-  for (let i = 0; i < count; i++) {
-    const angle = randomRange(-Math.PI * 0.8, -Math.PI * 0.2); // Upward arc
-    const speed = randomRange(80, 150);
-    const velocity = vecFromAngle(angle, speed);
-
-    particles.push({
-      id: generateId(),
-      position: { ...position },
-      velocity,
-      color,
-      size: randomRange(3, 6),
-      life: 1,
-      decay: randomRange(1, 2),
-    });
-  }
-
-  return particles;
-}
-
-/**
  * Create ripple effect
  */
 export function createRipple(position: Vector2D, timestamp: number): Ripple {
@@ -149,6 +125,7 @@ export function updateEffects(
     poloBubbles: updatePoloBubbles(effects.poloBubbles, deltaTime, timestamp),
     particles: updateParticles(effects.particles, deltaTime),
     ripples: updateRipples(effects.ripples, deltaTime, timestamp),
+    scorePopups: updateScorePopups(effects.scorePopups, deltaTime, timestamp),
   };
 }
 
@@ -257,6 +234,55 @@ function updateRipples(
 }
 
 /**
+ * Create score popup
+ */
+export function createScorePopup(
+  position: Vector2D,
+  points: number,
+  timestamp: number
+): ScorePopup {
+  return {
+    id: generateId(),
+    position: { ...position },
+    points,
+    opacity: 1,
+    offsetY: 0,
+    scale: 1.5, // Start bigger for pop effect
+    startTime: timestamp,
+  };
+}
+
+/**
+ * Update score popups
+ */
+function updateScorePopups(
+  popups: ScorePopup[],
+  _deltaTime: number,
+  timestamp: number
+): ScorePopup[] {
+  const duration = 1200; // ms
+  return popups
+    .map((popup) => {
+      const elapsed = timestamp - popup.startTime;
+      const progress = elapsed / duration;
+
+      // Ease out for smooth animation
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+
+      return {
+        ...popup,
+        offsetY: -60 * easeOut, // Float up
+        opacity: 1 - progress,
+        scale: 1.5 - 0.5 * easeOut, // Shrink slightly
+      };
+    })
+    .filter((popup) => {
+      const elapsed = timestamp - popup.startTime;
+      return elapsed < duration;
+    });
+}
+
+/**
  * Add sound wave to effects
  */
 export function addSoundWave(
@@ -310,8 +336,17 @@ export function addRipple(
 }
 
 /**
- * Clear all effects
+ * Add score popup to effects
  */
-export function clearEffects(): Effects {
-  return createEffects();
+export function addScorePopup(
+  effects: Effects,
+  position: Vector2D,
+  points: number,
+  timestamp: number
+): Effects {
+  return {
+    ...effects,
+    scorePopups: [...effects.scorePopups, createScorePopup(position, points, timestamp)],
+  };
 }
+

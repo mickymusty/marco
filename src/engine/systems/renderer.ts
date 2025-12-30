@@ -178,9 +178,11 @@ export function renderFish(
     facingAngle = Math.atan2(velocity.y, velocity.x);
   }
 
-  // Tail wag animation
+  // Tail wag animation - faster when fleeing
+  const isFleeing = fish.currentBehavior === 'fleeing';
+  const tailSpeed = isFleeing ? ANIMATION.fishSwim.tailWagSpeed * 2 : ANIMATION.fishSwim.tailWagSpeed;
   const tailWag =
-    Math.sin(timestamp * ANIMATION.fishSwim.tailWagSpeed * 0.01) *
+    Math.sin(timestamp * tailSpeed * 0.01) *
     ANIMATION.fishSwim.tailWagAmplitude;
 
   ctx.save();
@@ -191,14 +193,16 @@ export function renderFish(
   const opacity = isVisible || fish.isRevealed ? 1 : 0;
   ctx.globalAlpha = opacity;
 
-  // Revealed glow
+  // Revealed glow - pulsing effect
   if (fish.isRevealed) {
-    const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 2);
-    glowGradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-    glowGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    const pulseIntensity = 0.3 + Math.sin(timestamp * 0.01) * 0.15;
+    const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 2.5);
+    glowGradient.addColorStop(0, `rgba(255, 255, 100, ${pulseIntensity})`);
+    glowGradient.addColorStop(0.5, `rgba(255, 200, 50, ${pulseIntensity * 0.5})`);
+    glowGradient.addColorStop(1, 'rgba(255, 200, 50, 0)');
     ctx.fillStyle = glowGradient;
     ctx.beginPath();
-    ctx.arc(0, 0, radius * 2, 0, Math.PI * 2);
+    ctx.arc(0, 0, radius * 2.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -443,6 +447,47 @@ export function renderRipples(
 }
 
 /**
+ * Render score popups
+ */
+export function renderScorePopups(
+  ctx: CanvasRenderingContext2D,
+  effects: Effects
+): void {
+  for (const popup of effects.scorePopups) {
+    ctx.save();
+    ctx.globalAlpha = popup.opacity;
+
+    const x = popup.position.x;
+    const y = popup.position.y + popup.offsetY;
+
+    // Scale animation
+    ctx.translate(x, y);
+    ctx.scale(popup.scale, popup.scale);
+
+    // Draw score text with glow
+    const text = `+${popup.points}`;
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Glow effect
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 10;
+
+    // Outline
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.lineWidth = 4;
+    ctx.strokeText(text, 0, 0);
+
+    // Fill with gold color
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText(text, 0, 0);
+
+    ctx.restore();
+  }
+}
+
+/**
  * Render all effects
  */
 export function renderEffects(
@@ -453,6 +498,7 @@ export function renderEffects(
   renderSoundWaves(ctx, effects);
   renderParticles(ctx, effects);
   renderPoloBubbles(ctx, effects);
+  renderScorePopups(ctx, effects);
 }
 
 /**

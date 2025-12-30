@@ -181,8 +181,17 @@ export function GameOver({
           marginBottom: '20px',
         }}>
           <p style={{ marginBottom: '5px', opacity: 0.7 }}>Rating</p>
-          <p style={{ fontSize: '32px' }}>
+          <p style={{
+            fontSize: '48px',
+            fontWeight: 'bold',
+            color: getRatingColor(fishCaught, totalFish, timeRemaining),
+            textShadow: `0 0 20px ${getRatingColor(fishCaught, totalFish, timeRemaining)}`,
+            animation: getRating(fishCaught, totalFish, timeRemaining) === 'S' ? 'ratingPulse 1s ease infinite' : 'none',
+          }}>
             {getRating(fishCaught, totalFish, timeRemaining)}
+          </p>
+          <p style={{ fontSize: '12px', opacity: 0.6, marginTop: '5px' }}>
+            {getRatingMessage(fishCaught, totalFish, timeRemaining)}
           </p>
         </div>
 
@@ -212,6 +221,10 @@ export function GameOver({
           from { opacity: 0; transform: scale(0.95); }
           to { opacity: 1; transform: scale(1); }
         }
+        @keyframes ratingPulse {
+          0%, 100% { transform: scale(1); filter: brightness(1); }
+          50% { transform: scale(1.1); filter: brightness(1.3); }
+        }
       `}</style>
     </div>
   );
@@ -229,6 +242,38 @@ function getRating(fishCaught: number, totalFish: number, timeRemaining: number)
   if (catchRatio >= 0.6) return 'C';
   if (catchRatio >= 0.4) return 'D';
   return 'F';
+}
+
+/**
+ * Get color for rating
+ */
+function getRatingColor(fishCaught: number, totalFish: number, timeRemaining: number): string {
+  const rating = getRating(fishCaught, totalFish, timeRemaining);
+  const colors: Record<string, string> = {
+    'S': '#ffd700',
+    'A': '#44ff44',
+    'B': '#4ecdc4',
+    'C': '#ffaa00',
+    'D': '#ff8844',
+    'F': '#ff4444',
+  };
+  return colors[rating] || '#ffffff';
+}
+
+/**
+ * Get encouraging message for rating
+ */
+function getRatingMessage(fishCaught: number, totalFish: number, timeRemaining: number): string {
+  const rating = getRating(fishCaught, totalFish, timeRemaining);
+  const messages: Record<string, string> = {
+    'S': 'Perfect! You are a Marco Polo master!',
+    'A': 'Excellent! You caught them all!',
+    'B': 'Great job! Almost got them all!',
+    'C': 'Good effort! Keep practicing!',
+    'D': 'Not bad! Try using Marco calls wisely.',
+    'F': 'Keep trying! Listen for the Polo!',
+  };
+  return messages[rating] || '';
 }
 
 export default GameOver;

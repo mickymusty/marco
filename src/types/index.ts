@@ -12,14 +12,6 @@ export interface Vector2D {
   y: number;
 }
 
-/** Rectangle bounds for collision detection and rendering */
-export interface Bounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 /** Circle for collision detection */
 export interface Circle {
   x: number;
@@ -148,12 +140,24 @@ export interface Ripple {
   startTime: number;
 }
 
+/** Score popup effect when catching fish */
+export interface ScorePopup {
+  id: string;
+  position: Vector2D;
+  points: number;
+  opacity: number;
+  offsetY: number;
+  scale: number;
+  startTime: number;
+}
+
 /** Collection of all active effects */
 export interface Effects {
   soundWaves: SoundWave[];
   poloBubbles: PoloBubble[];
   particles: Particle[];
   ripples: Ripple[];
+  scorePopups: ScorePopup[];
 }
 
 // ============================================================================
@@ -180,26 +184,6 @@ export interface KeyBindings {
   marco: string[];
   pause: string[];
   confirm: string[];
-}
-
-// ============================================================================
-// Rendering Types
-// ============================================================================
-
-/** Canvas rendering context wrapper */
-export interface RenderContext {
-  ctx: CanvasRenderingContext2D;
-  width: number;
-  height: number;
-  deltaTime: number;
-  timestamp: number;
-}
-
-/** Camera/viewport for rendering */
-export interface Camera {
-  x: number;
-  y: number;
-  zoom: number;
 }
 
 // ============================================================================
@@ -230,17 +214,3 @@ export interface HighScoreEntry {
   date: number;
 }
 
-// ============================================================================
-// Animation Types
-// ============================================================================
-
-/** Animation frame data */
-export interface AnimationFrame {
-  frameIndex: number;
-  totalFrames: number;
-  frameDuration: number;
-  elapsedTime: number;
-}
-
-/** Easing function type */
-export type EasingFunction = (t: number) => number;
