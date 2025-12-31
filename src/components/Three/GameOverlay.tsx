@@ -10,8 +10,10 @@ interface GameOverlayProps {
   pelletsEaten: number;
   gameStatus: GameStatus;
   isPoweredUp: boolean;
+  comboDisplay: { points: number; combo: number } | null;
   onStart: () => void;
   onReset: () => void;
+  onTogglePause: () => void;
 }
 
 export function GameOverlay({
@@ -23,26 +25,32 @@ export function GameOverlay({
   pelletsEaten,
   gameStatus,
   isPoweredUp,
+  comboDisplay,
   onStart,
   onReset,
+  onTogglePause,
 }: GameOverlayProps) {
   const progress = totalPellets > 0 ? Math.min(100, (pelletsEaten / totalPellets) * 100) : 0;
   const isGameOver = gameStatus === 'lost';
   const isReady = gameStatus === 'ready';
+  const isPaused = gameStatus === 'paused';
 
   const panelStyle: CSSProperties = {
     background: isGameOver
       ? 'linear-gradient(135deg, rgba(80, 20, 20, 0.95), rgba(60, 15, 15, 0.9))'
-      : isPoweredUp
-        ? 'linear-gradient(135deg, rgba(40, 40, 80, 0.95), rgba(30, 30, 100, 0.9))'
-        : 'linear-gradient(135deg, rgba(10, 10, 30, 0.95), rgba(20, 20, 50, 0.9))',
-    border: `2px solid ${isGameOver ? '#ff4444' : isPoweredUp ? '#4444ff' : '#ffff00'}`,
+      : isPaused
+        ? 'linear-gradient(135deg, rgba(50, 50, 50, 0.95), rgba(30, 30, 30, 0.9))'
+        : isPoweredUp
+          ? 'linear-gradient(135deg, rgba(40, 40, 80, 0.95), rgba(30, 30, 100, 0.9))'
+          : 'linear-gradient(135deg, rgba(10, 10, 30, 0.95), rgba(20, 20, 50, 0.9))',
+    border: `2px solid ${isGameOver ? '#ff4444' : isPaused ? '#888888' : isPoweredUp ? '#4444ff' : '#ffff00'}`,
     borderRadius: '16px',
     padding: '16px 24px',
     backdropFilter: 'blur(12px)',
     width: '100%',
     maxWidth: '700px',
-    boxShadow: `0 0 30px ${isGameOver ? 'rgba(255, 0, 0, 0.3)' : isPoweredUp ? 'rgba(0, 0, 255, 0.4)' : 'rgba(255, 255, 0, 0.2)'}`,
+    boxShadow: `0 0 30px ${isGameOver ? 'rgba(255, 0, 0, 0.3)' : isPaused ? 'rgba(100, 100, 100, 0.3)' : isPoweredUp ? 'rgba(0, 0, 255, 0.4)' : 'rgba(255, 255, 0, 0.2)'}`,
+    position: 'relative',
   };
 
   const labelStyle: CSSProperties = {
@@ -63,12 +71,7 @@ export function GameOverlay({
   if (isReady) {
     return (
       <div style={panelStyle}>
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '20px 0',
-          }}
-        >
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <div
             style={{
               fontSize: '32px',
@@ -89,15 +92,18 @@ export function GameOverlay({
           >
             Eat all pellets! Avoid ghosts! Power pellets let you eat ghosts!
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
             <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', color: '#fff' }}>
               WASD / Arrows: Move
+            </div>
+            <div style={{ padding: '8px 12px', background: 'rgba(100,100,100,0.2)', borderRadius: '8px', fontSize: '12px', color: '#aaa' }}>
+              ESC / P: Pause
             </div>
             <div style={{ padding: '8px 12px', background: 'rgba(255,255,0,0.2)', borderRadius: '8px', fontSize: '12px', color: '#ffff00' }}>
               Pellets: +10pts
             </div>
             <div style={{ padding: '8px 12px', background: 'rgba(255,170,0,0.2)', borderRadius: '8px', fontSize: '12px', color: '#ffaa00' }}>
-              Power Pellets: +50pts
+              Power: +50pts
             </div>
           </div>
           <button
@@ -122,6 +128,68 @@ export function GameOverlay({
               High Score: {highScore.toLocaleString()}
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Paused screen
+  if (isPaused) {
+    return (
+      <div style={panelStyle}>
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div
+            style={{
+              fontSize: '28px',
+              fontWeight: 700,
+              color: '#ffffff',
+              textShadow: '0 0 15px rgba(255, 255, 255, 0.4)',
+              marginBottom: '16px',
+            }}
+          >
+            PAUSED
+          </div>
+          <div style={{ fontSize: '16px', color: '#ffff00', marginBottom: '8px' }}>
+            Score: {score.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '20px' }}>
+            Level {level} - {pelletsEaten}/{totalPellets} pellets
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+            <button
+              type="button"
+              onClick={onTogglePause}
+              style={{
+                padding: '12px 28px',
+                borderRadius: '10px',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'linear-gradient(135deg, #4ecdc4, #3db8b0)',
+                color: '#000',
+                fontWeight: 700,
+                fontSize: '16px',
+                boxShadow: '0 6px 24px rgba(78, 205, 196, 0.4)',
+              }}
+            >
+              RESUME
+            </button>
+            <button
+              type="button"
+              onClick={onReset}
+              style={{
+                padding: '12px 28px',
+                borderRadius: '10px',
+                border: '2px solid #ff6b6b',
+                cursor: 'pointer',
+                background: 'transparent',
+                color: '#ff6b6b',
+                fontWeight: 700,
+                fontSize: '16px',
+              }}
+            >
+              RESTART
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -179,6 +247,34 @@ export function GameOverlay({
   // In-game HUD
   return (
     <div style={panelStyle}>
+      {/* Combo display popup */}
+      {comboDisplay && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '-60px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'linear-gradient(135deg, rgba(255, 100, 100, 0.95), rgba(255, 50, 50, 0.9))',
+            padding: '12px 24px',
+            borderRadius: '12px',
+            border: '2px solid #ff6666',
+            boxShadow: '0 0 30px rgba(255, 100, 100, 0.6)',
+            animation: 'pulse 0.3s ease-out',
+            zIndex: 100,
+          }}
+        >
+          <div style={{ fontSize: '20px', fontWeight: 700, color: '#fff', textAlign: 'center' }}>
+            +{comboDisplay.points.toLocaleString()}
+          </div>
+          {comboDisplay.combo > 1 && (
+            <div style={{ fontSize: '12px', color: '#ffcc00', textAlign: 'center' }}>
+              {comboDisplay.combo}x COMBO!
+            </div>
+          )}
+        </div>
+      )}
+
       {isPoweredUp && (
         <div
           style={{
@@ -190,7 +286,7 @@ export function GameOverlay({
             textShadow: '0 0 15px rgba(100, 100, 255, 0.8)',
           }}
         >
-          POWER MODE ACTIVE!
+          POWER MODE - EAT THE GHOSTS!
         </div>
       )}
 
@@ -230,7 +326,7 @@ export function GameOverlay({
           <div style={labelStyle}>Lives</div>
           <div style={{ fontSize: '24px' }}>
             {Array.from({ length: lives }).map((_, i) => (
-              <span key={i} style={{ marginRight: '4px' }}>🟡</span>
+              <span key={i} style={{ marginRight: '4px', filter: 'drop-shadow(0 0 4px rgba(255,255,0,0.5))' }}>●</span>
             ))}
           </div>
         </div>
@@ -258,6 +354,24 @@ export function GameOverlay({
             />
           </div>
         </div>
+
+        {/* Pause button */}
+        <button
+          type="button"
+          onClick={onTogglePause}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '8px',
+            border: '1px solid rgba(255,255,255,0.3)',
+            cursor: 'pointer',
+            background: 'rgba(255,255,255,0.1)',
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: '12px',
+          }}
+        >
+          PAUSE
+        </button>
       </div>
     </div>
   );

@@ -30,6 +30,56 @@ interface GameLogicProps {
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const randomBetween = (min: number, max: number) => Math.random() * (max - min) + min;
 
+// Ghost personalities (like classic Pac-Man)
+// Blinky (red): Direct chaser - always targets player
+// Pinky (pink): Ambusher - targets ahead of player
+// Inky (cyan): Unpredictable - flanker
+// Clyde (orange): Random - chases when far, scatters when close
+
+function getGhostTargetPosition(
+  ghost: GhostState,
+  ghostIndex: number,
+  pacmanPos: Vector3,
+  pacmanVel: Vector3,
+  bounds: Bounds3D,
+  helpers: { target: Vector3 }
+): Vector3 {
+  const personality = ghostIndex % 4;
+
+  switch (personality) {
+    case 0: // Blinky - Direct chase
+      return helpers.target.copy(pacmanPos);
+
+    case 1: // Pinky - Ambush (target 4 units ahead of player)
+      helpers.target.copy(pacmanPos);
+      if (pacmanVel.lengthSq() > 0.01) {
+        const ahead = pacmanVel.clone().normalize().multiplyScalar(4);
+        helpers.target.add(ahead);
+      }
+      return helpers.target;
+
+    case 2: // Inky - Flanker (tries to cut off from the side)
+      helpers.target.copy(pacmanPos);
+      const perpendicular = new Vector3(-pacmanVel.z, 0, pacmanVel.x).normalize().multiplyScalar(3);
+      helpers.target.add(perpendicular);
+      return helpers.target;
+
+    case 3: // Clyde - Shy (chases when far, runs when close)
+      const distToPlayer = ghost.position.distanceTo(pacmanPos);
+      if (distToPlayer > 8) {
+        return helpers.target.copy(pacmanPos);
+      } else {
+        // Run to corner
+        const cornerX = ghost.position.x > 0 ? bounds.x - 2 : -bounds.x + 2;
+        const cornerZ = ghost.position.z > 0 ? bounds.z - 2 : -bounds.z + 2;
+        return helpers.target.set(cornerX, 0.6, cornerZ);
+      }
+
+    default:
+      return helpers.target.copy(pacmanPos);
+  }
+}
+
 export function GameLogic({
   keys,
   pacmanState,
@@ -49,15 +99,18 @@ export function GameLogic({
       move: new Vector3(),
       toPlayer: new Vector3(),
       wander: new Vector3(),
+      target: new Vector3(),
     }),
     []
   );
 
   useFrame((state, delta) => {
+    // Don't update when paused or not playing
     if (gameStatus !== 'playing') return;
 
     const dt = Math.min(delta, 0.05);
     const now = Date.now();
+    const elapsed = now - gameStartTime;
 
     // Check power-up expiration
     if (pacmanState.isPoweredUp && now > pacmanState.powerUpEndTime) {
@@ -135,66 +188,100 @@ export function GameLogic({
     // === GHOST AI AND COLLISION ===
     ghostsRef.current?.forEach((ghost, index) => {
       // Check spawn delay
-      const elapsed = now - gameStartTime;
       if (!ghost.isActive && elapsed > ghost.spawnDelay) {
         ghost.isActive = true;
       }
       if (!ghost.isActive || ghost.mode === 'eaten') return;
 
-      // Direction change timer
+      // Direction change timer - smarter ghosts change direction more often
       ghost.directionTimer -= dt;
-      if (ghost.directionTimer <= 0) {
-        ghost.directionTimer = randomBetween(1.5, 3);
+      const shouldUpdateDirection = ghost.directionTimer <= 0;
 
-        if (ghost.mode === 'chase' || ghost.mode === 'scatter') {
-          // Chase: move toward player
-          if (ghost.mode === 'chase') {
-            helpers.toPlayer
-              .copy(pacmanState.position)
-              .sub(ghost.position)
-              .normalize()
-              .multiplyScalar(ghost.speed);
-            // Add some randomness
-            helpers.toPlayer.x += randomBetween(-0.5, 0.5);
-            helpers.toPlayer.z += randomBetween(-0.5, 0.5);
-            ghost.velocity.copy(helpers.toPlayer);
-          } else {
-            // Scatter: move randomly
-            ghost.velocity
-              .set(randomBetween(-1, 1), 0, randomBetween(-1, 1))
-              .normalize()
-              .multiplyScalar(ghost.speed);
-          }
+      if (shouldUpdateDirection) {
+        // Faster direction updates for more responsive AI
+        ghost.directionTimer = randomBetween(0.8, 1.5);
+
+        if (ghost.mode === 'chase') {
+          // Use personality-based targeting
+          const targetPos = getGhostTargetPosition(
+            ghost,
+            index,
+            pacmanState.position,
+            pacmanState.velocity,
+            bounds,
+            helpers
+          );
+
+          helpers.toPlayer
+            .copy(targetPos)
+            .sub(ghost.position)
+            .normalize()
+            .multiplyScalar(ghost.speed);
+
+          // Add slight randomness for unpredictability
+          helpers.toPlayer.x += randomBetween(-0.3, 0.3);
+          helpers.toPlayer.z += randomBetween(-0.3, 0.3);
+          ghost.velocity.copy(helpers.toPlayer);
+
+        } else if (ghost.mode === 'scatter') {
+          // Move to assigned corner based on ghost index
+          const corners = [
+            { x: bounds.x - 2, z: -bounds.z + 2 },   // Top right
+            { x: -bounds.x + 2, z: -bounds.z + 2 },  // Top left
+            { x: bounds.x - 2, z: bounds.z - 2 },    // Bottom right
+            { x: -bounds.x + 2, z: bounds.z - 2 },   // Bottom left
+          ];
+          const corner = corners[index % 4];
+
+          helpers.toPlayer
+            .set(corner.x - ghost.position.x, 0, corner.z - ghost.position.z)
+            .normalize()
+            .multiplyScalar(ghost.speed);
+
+          ghost.velocity.copy(helpers.toPlayer);
+
         } else if (ghost.mode === 'frightened') {
-          // Run away from player
+          // Run away from player more aggressively
           helpers.toPlayer
             .copy(ghost.position)
             .sub(pacmanState.position)
             .normalize()
-            .multiplyScalar(ghost.speed * 0.5);
-          helpers.toPlayer.x += randomBetween(-1, 1);
-          helpers.toPlayer.z += randomBetween(-1, 1);
+            .multiplyScalar(ghost.speed * 0.6);
+
+          // More erratic movement when frightened
+          helpers.toPlayer.x += randomBetween(-1.5, 1.5);
+          helpers.toPlayer.z += randomBetween(-1.5, 1.5);
           ghost.velocity.copy(helpers.toPlayer);
         }
       }
 
-      // Add wander behavior
+      // Smoother wandering with personality
       helpers.wander.copy(ghost.velocity);
-      helpers.wander.x += Math.sin(state.clock.elapsedTime * 2 + index) * 0.3;
-      helpers.wander.z += Math.cos(state.clock.elapsedTime * 1.5 + index) * 0.3;
+      const wanderStrength = ghost.mode === 'frightened' ? 0.5 : 0.2;
+      helpers.wander.x += Math.sin(state.clock.elapsedTime * 2.5 + index * 1.7) * wanderStrength;
+      helpers.wander.z += Math.cos(state.clock.elapsedTime * 2 + index * 1.3) * wanderStrength;
 
-      // Boundary avoidance
-      if (Math.abs(ghost.position.x) > bounds.x - 1) {
-        helpers.wander.x = -Math.sign(ghost.position.x) * Math.abs(helpers.wander.x);
+      // Boundary avoidance - turn smoothly
+      const boundaryBuffer = 2;
+      if (ghost.position.x > bounds.x - boundaryBuffer) {
+        helpers.wander.x -= (ghost.position.x - (bounds.x - boundaryBuffer)) * 0.5;
       }
-      if (Math.abs(ghost.position.z) > bounds.z - 1) {
-        helpers.wander.z = -Math.sign(ghost.position.z) * Math.abs(helpers.wander.z);
+      if (ghost.position.x < -bounds.x + boundaryBuffer) {
+        helpers.wander.x -= (ghost.position.x - (-bounds.x + boundaryBuffer)) * 0.5;
+      }
+      if (ghost.position.z > bounds.z - boundaryBuffer) {
+        helpers.wander.z -= (ghost.position.z - (bounds.z - boundaryBuffer)) * 0.5;
+      }
+      if (ghost.position.z < -bounds.z + boundaryBuffer) {
+        helpers.wander.z -= (ghost.position.z - (-bounds.z + boundaryBuffer)) * 0.5;
       }
 
       helpers.wander.y = 0;
       helpers.wander.clampLength(ghost.speed * 0.5, ghost.speed);
 
-      ghost.velocity.lerp(helpers.wander, 0.1);
+      // Smoother movement interpolation
+      const lerpFactor = ghost.mode === 'frightened' ? 0.15 : 0.12;
+      ghost.velocity.lerp(helpers.wander, lerpFactor);
       ghost.position.addScaledVector(ghost.velocity, dt);
 
       // Clamp ghost position
@@ -216,18 +303,31 @@ export function GameLogic({
 
       if (distToPlayer < collisionDist) {
         if (ghost.mode === 'frightened') {
-          // Pac-Man eats the ghost
           onGhostEaten(ghost.id);
         } else {
-          // Ghost kills Pac-Man
           onPlayerHit();
         }
       }
 
-      // Switch between scatter and chase periodically
+      // Switch between scatter and chase periodically (classic Pac-Man pattern)
+      // Scatter for 7s, Chase for 20s, then shorter scatter periods
       if (ghost.mode !== 'frightened') {
-        const cycleTime = (elapsed / 1000) % 20;
-        ghost.mode = cycleTime < 7 ? 'scatter' : 'chase';
+        const cycleTime = elapsed / 1000;
+        if (cycleTime < 7) {
+          ghost.mode = 'scatter';
+        } else if (cycleTime < 27) {
+          ghost.mode = 'chase';
+        } else if (cycleTime < 34) {
+          ghost.mode = 'scatter';
+        } else if (cycleTime < 54) {
+          ghost.mode = 'chase';
+        } else if (cycleTime < 59) {
+          ghost.mode = 'scatter';
+        } else {
+          // After initial pattern, mostly chase with brief scatters
+          const laterCycle = (cycleTime - 59) % 25;
+          ghost.mode = laterCycle < 5 ? 'scatter' : 'chase';
+        }
       }
     });
   });

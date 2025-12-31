@@ -145,6 +145,7 @@ export function usePacmanGame(difficulty: Difficulty = 'medium') {
   const [gameStatus, setGameStatus] = useState<GameStatus>('ready');
   const [pelletsEaten, setPelletsEaten] = useState(0);
   const [ghostsEatenCombo, setGhostsEatenCombo] = useState(0);
+  const [comboDisplay, setComboDisplay] = useState<{ points: number; combo: number } | null>(null);
 
   // Sync refs
   useEffect(() => {
@@ -169,6 +170,10 @@ export function usePacmanGame(difficulty: Difficulty = 'medium') {
 
   const startGame = useCallback(() => {
     setGameStatus('playing');
+  }, []);
+
+  const togglePause = useCallback(() => {
+    setGameStatus((prev) => (prev === 'playing' ? 'paused' : prev === 'paused' ? 'playing' : prev));
   }, []);
 
   const resetGame = useCallback(() => {
@@ -271,6 +276,10 @@ export function usePacmanGame(difficulty: Difficulty = 'medium') {
     setScore((prev) => prev + points);
     setGhostsEatenCombo((prev) => prev + 1);
 
+    // Show combo display
+    setComboDisplay({ points, combo: ghostsEatenCombo + 1 });
+    setTimeout(() => setComboDisplay(null), 1500);
+
     // Respawn ghost at edge after delay
     setTimeout(() => {
       const angle = Math.random() * Math.PI * 2;
@@ -344,7 +353,9 @@ export function usePacmanGame(difficulty: Difficulty = 'medium') {
     totalEaten,
     worldBounds,
     config,
+    comboDisplay,
     startGame,
+    togglePause,
     resetGame,
     handlePelletEaten,
     handlePowerPelletEaten,

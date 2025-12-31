@@ -1,5 +1,5 @@
 /**
- * Core type definitions for the Marco Polo game
+ * Core type definitions for Pac-Man 3D
  */
 
 /** Keyboard input state */
@@ -19,7 +19,6 @@ export interface KeyBindings {
   down: string[];
   left: string[];
   right: string[];
-  marco: string[];
   pause: string[];
   confirm: string[];
 }

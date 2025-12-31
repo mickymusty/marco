@@ -1,9 +1,9 @@
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
 import { GameLogic } from './GameLogic.tsx';
 import { SceneLights } from './SceneLights.tsx';
-import { WaterSurface } from './WaterSurface.tsx';
+import { ArenaFloor } from './ArenaFloor.tsx';
 import { Pacman } from './Pacman.tsx';
 import { Pellet } from './Pellet.tsx';
 import { PowerPellet } from './PowerPellet.tsx';
@@ -21,7 +21,7 @@ interface Game3DProps {
 
 export function Game3D({ difficulty = 'medium' }: Game3DProps) {
   const { keys } = useKeyboard(true);
-  const [gameStartTime, setGameStartTime] = useState(Date.now());
+  const [gameStartTime, setGameStartTime] = useState(() => Date.now());
   const {
     pacman,
     pellets,
@@ -38,7 +38,9 @@ export function Game3D({ difficulty = 'medium' }: Game3DProps) {
     totalPellets,
     totalEaten,
     worldBounds,
+    comboDisplay,
     startGame,
+    togglePause,
     resetGame,
     handlePelletEaten,
     handlePowerPelletEaten,
@@ -55,6 +57,15 @@ export function Game3D({ difficulty = 'medium' }: Game3DProps) {
     setGameStartTime(Date.now());
     resetGame();
   };
+
+  // Handle keyboard pause
+  const lastEscapeRef = useRef(false);
+  useEffect(() => {
+    if (keys.escape && !lastEscapeRef.current && (gameStatus === 'playing' || gameStatus === 'paused')) {
+      togglePause();
+    }
+    lastEscapeRef.current = keys.escape;
+  }, [keys.escape, gameStatus, togglePause]);
 
   const containerStyle: CSSProperties = {
     width: '100%',
@@ -94,7 +105,7 @@ export function Game3D({ difficulty = 'medium' }: Game3DProps) {
             <CameraRig target={pacman.current} />
 
             {/* Arena floor */}
-            <WaterSurface size={boundarySize * 2.5} />
+            <ArenaFloor size={boundarySize * 2.5} bounds={worldBounds} />
 
             {/* Pac-Man player */}
             <Pacman pacmanState={pacman.current} />
@@ -150,8 +161,10 @@ export function Game3D({ difficulty = 'medium' }: Game3DProps) {
               pelletsEaten={totalEaten}
               gameStatus={gameStatus}
               isPoweredUp={pacman.current.isPoweredUp}
+              comboDisplay={comboDisplay}
               onStart={handleStart}
               onReset={handleReset}
+              onTogglePause={togglePause}
             />
           </div>
         </div>

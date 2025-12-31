@@ -74,7 +74,6 @@ export const DEFAULT_KEY_BINDINGS: KeyBindings = {
   down: ['ArrowDown', 'KeyS'],
   left: ['ArrowLeft', 'KeyA'],
   right: ['ArrowRight', 'KeyD'],
-  marco: ['Space'],
   pause: ['Escape', 'KeyP'],
   confirm: ['Enter', 'Space'],
 } as const;

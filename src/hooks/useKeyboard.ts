@@ -26,7 +26,6 @@ export function useKeyboard(enabled: boolean = true) {
     if (DEFAULT_KEY_BINDINGS.down.includes(code)) return 'down';
     if (DEFAULT_KEY_BINDINGS.left.includes(code)) return 'left';
     if (DEFAULT_KEY_BINDINGS.right.includes(code)) return 'right';
-    if (DEFAULT_KEY_BINDINGS.marco.includes(code)) return 'space';
     if (DEFAULT_KEY_BINDINGS.pause.includes(code)) return 'escape';
     if (DEFAULT_KEY_BINDINGS.confirm.includes(code)) return 'enter';
     return null;
